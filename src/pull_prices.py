@@ -15,7 +15,7 @@ tickers = [
 # Pull 3 years of daily data for each stock
 for ticker in tickers:
     print(f"Pulling {ticker}...")
-    data = yf.download(ticker, period="3y")
+    data = yf.download(ticker, period="5y")
     
     # Save to CSV, filename based on ticker (remove the .L for cleanliness)
     filename = f"data/raw/{ticker.replace('.L', '').lower()}_prices.csv"
