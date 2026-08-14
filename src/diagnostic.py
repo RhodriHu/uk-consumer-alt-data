@@ -1,23 +1,25 @@
 """
-Diagnostic chart: rolling 12-month correlation between the composite
-signal and next-month returns across all stocks in the universe.
+Diagnostic: information coefficient over time for each individual
+stock-selection signal AND the composite.
 
-Purpose: test whether the signal had predictive power at any point,
-and identify when (if ever) that predictive power decayed.
+Note on Port Freight: this is a macro (market-timing) signal - it takes
+the same value across all stocks in any given month. It cannot generate
+cross-sectional IC by construction (you cannot rank 7 stocks by an
+identical value). It is excluded from the per-signal IC analysis below
+but retained in the composite for market-timing exposure.
 
-A positive correlation means high-signal stocks tended to have
-higher next-month returns - the strategy's core hypothesis.
-Zero or negative correlation means the signal wasn't working.
+Cross-sectional IC = correlation between signal values and next-month
+returns across the 7 stocks in each month. Positive IC = signal works.
 """
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import warnings
 
-# ==============================================================
-# Load the master dataset (already built by build_dataset.py)
-# ==============================================================
+# Suppress the divide warnings from correlations of constant series
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 master = pd.read_csv(
     "data/processed/master_dataset.csv",
@@ -35,99 +37,82 @@ trends.columns = tickers
 
 port = master["Total_Container_Imports"].copy()
 
-# ==============================================================
-# Rebuild the composite signal (same logic as backtest.py)
-# ==============================================================
+ons = master[[f"ons_{t}" for t in tickers]].copy()
+ons.columns = tickers
 
+# Build signals
 window = 12
-
 trends_z = (trends - trends.rolling(window).mean()) / trends.rolling(window).std()
-port_z = (port - port.rolling(window).mean()) / port.rolling(window).std()
+port_z_series = (port - port.rolling(window).mean()) / port.rolling(window).std()
+ons_z = (ons - ons.rolling(window).mean()) / ons.rolling(window).std()
 
-composite = trends_z.copy()
+# Composite: equal-weight of three signals (port broadcast to all stocks)
+composite = pd.DataFrame(index=trends_z.index, columns=tickers)
 for t in tickers:
-    composite[t] = (trends_z[t] + port_z) / 2
+    composite[t] = (trends_z[t] + port_z_series + ons_z[t]) / 3
 
+trends_z = trends_z.dropna()
+ons_z = ons_z.dropna()
 composite = composite.dropna()
 
-# ==============================================================
-# For each month, correlate signal cross-section with next-month returns
-# ==============================================================
+def compute_monthly_ic(signal_df, returns_df):
+    forward_returns = returns_df.shift(-1).loc[signal_df.index]
+    ics = []
+    dates = []
+    for date in signal_df.index:
+        sig_row = signal_df.loc[date]
+        ret_row = forward_returns.loc[date]
+        combined = pd.concat([sig_row, ret_row], axis=1).dropna()
+        if len(combined) < 3:
+            continue
+        ic = combined.iloc[:, 0].corr(combined.iloc[:, 1])
+        ics.append(ic)
+        dates.append(date)
+    return pd.Series(ics, index=dates)
 
-# Shift returns backward by 1: the return in row t is actually next month's return
-forward_returns = returns.shift(-1).loc[composite.index]
-
-# For each month, correlate that month's signal values across 7 stocks
-# with next-month returns across the same 7 stocks.
-# A positive correlation each month = strategy is working
-monthly_ic = []
-dates = []
-
-for date in composite.index:
-    sig_row = composite.loc[date]
-    ret_row = forward_returns.loc[date]
-
-    # Drop any NaN before correlating
-    combined = pd.concat([sig_row, ret_row], axis=1).dropna()
-    if len(combined) < 3:
-        continue
-
-    ic = combined.iloc[:, 0].corr(combined.iloc[:, 1])
-    monthly_ic.append(ic)
-    dates.append(date)
-
-ic_series = pd.Series(monthly_ic, index=dates)
-
-# ==============================================================
-# Compute 12-month rolling average IC to smooth noise
-# ==============================================================
-
-rolling_ic = ic_series.rolling(12).mean()
-
-# ==============================================================
-# Print summary statistics
-# ==============================================================
+ic_trends = compute_monthly_ic(trends_z, returns)
+ic_ons = compute_monthly_ic(ons_z, returns)
+ic_composite = compute_monthly_ic(composite, returns)
 
 print("="*60)
-print("SIGNAL DIAGNOSTIC")
+print("SIGNAL DIAGNOSTIC - Cross-Sectional Information Coefficient")
 print("="*60)
-print(f"\nMonthly Information Coefficient (IC):")
-print(f"  Mean IC:        {ic_series.mean():+.3f}")
-print(f"  Median IC:      {ic_series.median():+.3f}")
-print(f"  % months positive: {(ic_series > 0).mean():.1%}")
-print(f"  Observations:   {len(ic_series)}")
+print("\nNote: Port Freight excluded (macro signal, no cross-sectional variation)")
 
-# Split at Jan 2024 (the pivot point identified visually)
-pre_2024 = ic_series[ic_series.index < "2024-01-01"]
-post_2024 = ic_series[ic_series.index >= "2024-01-01"]
+def summarise(name, ic):
+    print(f"\n{name}:")
+    print(f"  Mean IC:              {ic.mean():+.3f}")
+    print(f"  Median IC:            {ic.median():+.3f}")
+    print(f"  % months positive:    {(ic > 0).mean():.1%}")
+    print(f"  Observations:         {len(ic)}")
+    pre = ic[ic.index < "2024-01-01"]
+    post = ic[ic.index >= "2024-01-01"]
+    print(f"  Pre-Jan 2024 mean:    {pre.mean():+.3f} ({len(pre)} months)")
+    print(f"  Post-Jan 2024 mean:   {post.mean():+.3f} ({len(post)} months)")
 
-print(f"\nSubperiod comparison:")
-print(f"  Pre-Jan 2024:  mean IC = {pre_2024.mean():+.3f} over {len(pre_2024)} months")
-print(f"  Post-Jan 2024: mean IC = {post_2024.mean():+.3f} over {len(post_2024)} months")
+summarise("Google Trends", ic_trends)
+summarise("ONS Retail Sales", ic_ons)
+summarise("Composite (Trends + Port + ONS)", ic_composite)
 
-# ==============================================================
-# Chart: rolling IC over time with zero line
-# ==============================================================
+# Chart
+fig, ax = plt.subplots(figsize=(11, 7))
 
-fig, ax = plt.subplots(figsize=(10, 6))
+for name, ic, color in [
+    ("Google Trends", ic_trends, "tab:blue"),
+    ("ONS Retail Sales", ic_ons, "tab:orange"),
+    ("Composite (3-signal)", ic_composite, "tab:red"),
+]:
+    rolling = ic.rolling(12).mean()
+    ax.plot(rolling.index, rolling.values, linewidth=2, label=name, color=color)
 
-# Plot raw monthly IC as light dots
-ax.plot(ic_series.index, ic_series.values, "o", alpha=0.3, markersize=4, label="Monthly IC")
-
-# Plot smoothed rolling IC as bold line
-ax.plot(rolling_ic.index, rolling_ic.values, linewidth=2.5, label="12-month rolling mean IC")
-
-# Zero line - anything above = signal working, below = not working
 ax.axhline(0, color="black", linewidth=1, linestyle="--", alpha=0.6)
+ax.axvline(pd.Timestamp("2024-01-01"), color="grey", linewidth=1, linestyle=":", alpha=0.7)
+ax.text(pd.Timestamp("2024-01-15"), 0.15, "Jan 2024\nregime shift", color="grey", fontsize=9)
 
-# Highlight the Jan 2024 pivot
-ax.axvline(pd.Timestamp("2024-01-01"), color="red", linewidth=1, linestyle=":", alpha=0.7)
-ax.text(pd.Timestamp("2024-01-15"), ax.get_ylim()[1] * 0.85, "Jan 2024\npivot", color="red", fontsize=9)
-
-ax.set_title("Signal Predictive Power Over Time\n(Cross-Sectional Correlation Between Composite Signal and Next-Month Returns)")
+ax.set_title("Cross-Sectional Signal Predictive Power\n(12-Month Rolling Mean Information Coefficient)")
 ax.set_xlabel("Date")
-ax.set_ylabel("Information Coefficient (IC)")
-ax.legend(loc="lower left")
+ax.set_ylabel("Rolling 12-month mean IC")
+ax.legend(loc="lower left", framealpha=0.9)
 ax.grid(alpha=0.3)
 plt.tight_layout()
 

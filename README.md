@@ -69,29 +69,48 @@ Sample period: September 2022 to January 2026 (42 months after the 12-month burn
 
 ## Interpretation
 
-To move beyond speculating about the underperformance, I built a signal diagnostic measuring the cross-sectional information coefficient (IC) between the composite signal and next-month returns for each month in the sample.
+The signal diagnostic tests each signal individually and as a composite, measuring cross-sectional information coefficient (IC) - the month-by-month correlation between signal ranks and next-month returns across the 7 stocks.
 
-**The signal had essentially no predictive power over the full sample.**
+**Port freight is excluded from the per-signal IC analysis.** It is a macro (market-timing) signal - the same value applies to all 7 stocks in any given month, so cross-sectional IC is undefined by construction. It is retained in the composite for its market-timing exposure, but a production system would treat market-timing and stock-selection signals separately rather than combining them.
 
-| Metric | Value |
-|---|---|
-| Mean IC (full sample) | -0.001 |
-| Median IC | -0.044 |
-| Months with positive IC | 48.8% |
-| Pre-Jan 2024 mean IC | +0.015 |
-| Post-Jan 2024 mean IC | -0.013 |
+| Signal | Full-sample IC | Pre-Jan 2024 IC | Post-Jan 2024 IC |
+|---|---|---|---|
+| Google Trends | -0.001 | +0.015 | -0.013 |
+| ONS Retail Sales | -0.033 | +0.026 | -0.074 |
+| Composite (3-signal) | -0.031 | **+0.085** | **-0.113** |
 
 ![Signal diagnostic](outputs/signal_diagnostic.png)
 
-*Monthly IC (dots) and 12-month rolling mean IC (bold line). Even in the pre-2024 period, rolling IC was marginally positive and highly volatile. Post-Jan 2024 the rolling IC turned decisively negative for roughly 18 months before recovering to near zero.*
+*12-month rolling mean IC for each signal. All three lines follow closely correlated trajectories - the signals capture the same underlying consumer momentum theme rather than adding independent information.*
 
-The apparent pre-2024 outperformance in the equity curve was, on this evidence, driven by luck within a small 7-stock universe rather than genuine signal skill. Real signals in quant equity aim for IC around +0.05 or higher; an IC of +0.015 is indistinguishable from zero.
+### What the diagnostic shows
 
-Three implications:
+The signals were modestly predictive pre-2024 and decisively anti-predictive through 2024-25, with a gradual recovery toward zero in late 2025. All three signals moved together, and the composite amplified both the pre-2024 positive IC and the post-2024 negative IC.
 
-1. **The composite signal is not predictive at this frequency and universe.** Monthly rebalancing on 7 stocks with these two inputs does not produce an edge. The individual signals may work at different horizons (e.g. weekly Trends for short-term reversion) or in different universes (broader FTSE 250 for cross-sectional differentiation).
-2. **Small universes are dangerous for backtesting.** With only 7 stocks and 3 held at a time, single-stock idiosyncratic moves overwhelm the signal. This is why real quant strategies operate on universes of hundreds to thousands of names.
-3. **Equity curve wins in short samples can be entirely noise.** The lesson is to measure IC or information ratio *before* trusting a strategy, not the other way round. Reporting a Sharpe ratio without an accompanying IC diagnostic overstates strategy quality.
+### Why the signal likely broke down
+
+With only 42 observations no explanation can be proved, but the timing is consistent with a change in what actually drove UK consumer stock returns.
+
+Through 2022 and most of 2023, the Bank of England was still hiking (peaking at 5.25% in August 2023) and consumer stocks moved primarily on operational fundamentals - retail sales, footfall, brand momentum. The signals here measure exactly that, and had modest positive predictive power in that period.
+
+From late 2023 the narrative shifted. Cuts were repeatedly deferred as inflation stayed sticky, and consumer stocks became rates-sensitive plays rather than earnings-driven ones. Then in October 2024 the Autumn Budget announced a large increase in employer National Insurance contributions taking effect April 2025, hitting exactly the retailers, pubs and restaurants in this universe on cost structure regardless of top-line demand.
+
+Once the market started pricing consumer stocks on rate expectations and cost inflation rather than on demand strength, signals that measure demand strength lost their edge. A retailer with strong Google Trends and rising ONS food sales could still get sold if its wage bill was about to jump or if a rate cut got pushed back.
+
+### Why the natural fix is not simply "switch signals"
+
+A naive response is to switch to a different signal in January 2024 when the IC turned. This is exactly the wrong lesson. On 31 January 2024 no live investor knew a regime shift had begun - the rolling IC did not cross zero until several months later. Any "switch" designed knowing what happened next is in-sample optimisation: it fits the backtest to the exact history observed and would fail live.
+
+The professional approach is either (a) a multi-signal ensemble with dynamic weighting across many independent signals, or (b) an explicit regime-detection model that predicts the current market driver. Both need far more data and signals than this project has.
+
+The realistic next iteration for this project is a fourth signal that captures the driver the market actually switched to - SONIA futures or gilt yield changes as a rates factor - so the composite has exposure to both demand momentum and rates. That would let the strategy adapt to whichever driver is dominant without fitting to observed regime breaks.
+
+### Two competing readings of the pre-2024 IC of +0.085
+
+- **Favourable:** the signals genuinely captured consumer momentum in a period when that mattered, and the shift to a negative IC reflects the macro drivers described above.
+- **Skeptical:** with 17 pre-period months, +0.085 could arise from noise. The recovery in late 2025 could be a re-emergence of signal or continued noise. Distinguishing requires more data.
+
+Both readings are defensible. With 41 total observations, no result should be treated as robust.
 
 ## Limitations
 
@@ -104,10 +123,11 @@ Three implications:
 
 ## Extensions
 
-- Weekly Google Trends via rolling shorter queries, stitched together
-- Add a third stock-specific signal (e.g. LinkedIn hiring rates by company)
+- **Rates factor** (SONIA futures or 2Y gilt yield changes) to add exposure to whichever driver is currently dominant - demand momentum or rates sensitivity
+- Weekly Google Trends via rolling shorter queries, stitched together, to increase sample size from 42 to ~180 observations
+- Broader universe (FTSE 250 consumer names) for better cross-sectional differentiation
 - Long-short version with market-neutral construction
-- Broader universe (FTSE 250 consumer names)
+- Multi-signal ensemble with dynamic weighting when signal count is high enough to support it
 
 ## How to run
 
