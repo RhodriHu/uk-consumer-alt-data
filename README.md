@@ -69,11 +69,29 @@ Sample period: September 2022 to January 2026 (42 months after the 12-month burn
 
 ## Interpretation
 
-Three candidate explanations for why the strategy stopped working in early 2024:
+To move beyond speculating about the underperformance, I built a signal diagnostic measuring the cross-sectional information coefficient (IC) between the composite signal and next-month returns for each month in the sample.
 
-1. **Regime change.** Late 2023 saw a pivot in UK rate expectations. Macro-driven signals like port freight may have decoupled from consumer stock returns as investor focus shifted from cyclical fundamentals to rates sensitivity.
-2. **Signal degradation.** Google Trends attention has become noisier as brand search saturates. A rolling z-score picks up mean reversion that fails when the underlying attention regime shifts.
-3. **Small-universe volatility.** With only 7 stocks and 3 held at a time, one poor selection dominates the portfolio. The strategy is very sensitive to any single-stock idiosyncratic tail.
+**The signal had essentially no predictive power over the full sample.**
+
+| Metric | Value |
+|---|---|
+| Mean IC (full sample) | -0.001 |
+| Median IC | -0.044 |
+| Months with positive IC | 48.8% |
+| Pre-Jan 2024 mean IC | +0.015 |
+| Post-Jan 2024 mean IC | -0.013 |
+
+![Signal diagnostic](outputs/signal_diagnostic.png)
+
+*Monthly IC (dots) and 12-month rolling mean IC (bold line). Even in the pre-2024 period, rolling IC was marginally positive and highly volatile. Post-Jan 2024 the rolling IC turned decisively negative for roughly 18 months before recovering to near zero.*
+
+The apparent pre-2024 outperformance in the equity curve was, on this evidence, driven by luck within a small 7-stock universe rather than genuine signal skill. Real signals in quant equity aim for IC around +0.05 or higher; an IC of +0.015 is indistinguishable from zero.
+
+Three implications:
+
+1. **The composite signal is not predictive at this frequency and universe.** Monthly rebalancing on 7 stocks with these two inputs does not produce an edge. The individual signals may work at different horizons (e.g. weekly Trends for short-term reversion) or in different universes (broader FTSE 250 for cross-sectional differentiation).
+2. **Small universes are dangerous for backtesting.** With only 7 stocks and 3 held at a time, single-stock idiosyncratic moves overwhelm the signal. This is why real quant strategies operate on universes of hundreds to thousands of names.
+3. **Equity curve wins in short samples can be entirely noise.** The lesson is to measure IC or information ratio *before* trusting a strategy, not the other way round. Reporting a Sharpe ratio without an accompanying IC diagnostic overstates strategy quality.
 
 ## Limitations
 
