@@ -155,24 +155,26 @@ DfT port freight ODS must be downloaded from gov.uk (PORT0502 quarterly data) an
 ONS retail sales data downloads automatically via API on first run.
 
 ## Repository structure
+```
 uk-consumer-alt-data/
 ├── README.md
 ├── requirements.txt
 ├── data/
-│ ├── raw/ (source data)
-│ └── processed/ (cleaned datasets)
+│   ├── raw/               (source data)
+│   └── processed/         (cleaned datasets)
 ├── src/
-│ ├── pull_prices.py
-│ ├── load_trends.py
-│ ├── load_port_data.py
-│ ├── load_ons_data.py
-│ ├── build_dataset.py
-│ ├── backtest.py
-│ └── diagnostic.py
+│   ├── pull_prices.py
+│   ├── load_trends.py
+│   ├── load_port_data.py
+│   ├── load_ons_data.py
+│   ├── build_dataset.py
+│   ├── backtest.py
+│   └── diagnostic.py
 └── outputs/
-├── equity_curve.png
-├── signal_diagnostic.png
-└── strategy_returns.csv
+    ├── equity_curve.png
+    ├── signal_diagnostic.png
+    └── strategy_returns.csv
+```
 
 ## Disclaimer
 
