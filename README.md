@@ -2,6 +2,13 @@
 
 A systematic long-only equity strategy on UK consumer stocks, using alternative data (Google Trends search volume and UK port freight statistics) to generate monthly signals. Personal project.
 
+## At a glance
+
+- **7 UK consumer stocks**, monthly rebalancing, long-only top-3
+- **Two alternative data sources**: Google Trends search interest + DfT port freight statistics
+- **42-month backtest** with 20bp monthly transaction cost
+- **Result**: Sharpe 0.14 (net) vs 0.21 for equal-weight benchmark - strategy underperformed. Full analysis and honest limitations below.
+
 ## Hypothesis
 
 Consumer stock returns should be predictable, in part, from two publicly observable inputs:
@@ -56,7 +63,9 @@ Sample period: September 2022 to January 2026 (42 months after the 12-month burn
 
 **The strategy underperformed the equal-weight benchmark.** It outperformed from inception through January 2024, then lagged persistently. Higher hit rate but worse average outcomes suggests the wins were small and the losses were large.
 
-See `outputs/equity_curve.png` for the cumulative return chart.
+![Equity curve](outputs/equity_curve.png)
+
+*Cumulative returns: strategy (solid line) versus equal-weight benchmark (dashed). The strategy outperformed from inception through January 2024, then persistently lagged as the signals decoupled from returns.*
 
 ## Interpretation
 
