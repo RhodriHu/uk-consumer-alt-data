@@ -54,7 +54,7 @@ Seven FTSE-listed UK consumer stocks, chosen for meaningful UK brand recognition
 
 ## Results
 
-**Sample period**August 2022 to January 2026, 42 monthly observations after the 12-month burn-in for rolling signals. The information coefficient analysis in the interpretation section uses 41 of these, excluding the final month, which has no subsequent return to predict.
+**Sample period** August 2022 to January 2026, 42 monthly observations after the 12-month burn-in for rolling signals. The information coefficient analysis in the interpretation section uses 41 of these, excluding the final month, which has no subsequent return to predict.
 
 | Metric | Strategy (net) | Equal-weight benchmark |
 |---|---|---|
