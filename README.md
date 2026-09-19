@@ -54,7 +54,7 @@ Seven FTSE-listed UK consumer stocks, chosen for meaningful UK brand recognition
 
 ## Results
 
-Sample period: August 2022 to January 2026 (42 months after the 12-month burn-in for rolling signals).
+**Sample period**August 2022 to January 2026, 42 monthly observations after the 12-month burn-in for rolling signals. The information coefficient analysis in the interpretation section uses 41 of these, excluding the final month, which has no subsequent return to predict.
 
 | Metric | Strategy (net) | Equal-weight benchmark |
 |---|---|---|
@@ -64,7 +64,7 @@ Sample period: August 2022 to January 2026 (42 months after the 12-month burn-in
 | Maximum drawdown | -42.4% | -27.4% |
 | Hit rate (positive months) | 54.8% | 52.4% |
 
-The strategy underperformed the equal-weight benchmark. It outperformed from inception through January 2024, then lagged persistently. Higher hit rate but worse average outcomes suggests the wins were small and the losses were large.
+Return figures are geometric (compounded), while the Sharpe ratio annualises the arithmetic mean monthly return at a zero risk-free rate. With a maximum drawdown above 40%, the variance drag between the two conventions is large enough to leave a marginally negative compounded return alongside a marginally positive Sharpe. Both figures are correct under their stated convention.
 
 ![Equity curve](outputs/equity_curve.png)
 
@@ -117,7 +117,7 @@ Both readings are defensible. With 41 total observations, no result should be tr
 
 ## Limitations
 
-- **Sample size.** 42 months is small. Confidence intervals on Sharpe ratio and IC are wide - point estimates should not be treated as precise.
+- **Sample size.** The analysis rests on 41 to 42 monthly observations. Confidence intervals on the Sharpe ratio and the information coefficients are correspondingly wide, and any covariance or correlation estimate built on this few points is fragile. A single adverse month moves the ICs materially. None of the point estimates should be treated as precise.
 - **Trends frequency.** Google Trends returned monthly data for the multi-year query. Weekly-frequency Trends data (achievable with rolling shorter queries stitched together) would materially increase sample size.
 - **Port freight is macro-uniform.** The same value applies to all stocks, so it doesn't help select between them - it only tilts the whole portfolio in or out. Including it in a cross-sectional composite is conceptually imperfect.
 - **ONS category mapping is coarse.** Wetherspoons and Domino's are mapped to "food stores" but their businesses (pub food, pizza delivery) are only loosely related to the retail food category ONS tracks.
