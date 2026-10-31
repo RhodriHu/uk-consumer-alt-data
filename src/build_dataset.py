@@ -65,7 +65,15 @@ print(f"  Trends shape: {trends.shape}")
 
 print("Loading port freight data...")
 port = pd.read_csv("data/processed/port_freight_quarterly.csv", index_col="date", parse_dates=True)
-port_total = port[["Total_Container_Imports"]]
+port_total = port[["Total_Container_Imports"]].copy()
+
+# Index is quarter START (e.g. 2024-01-01 for Q1 2024).
+# DfT publishes about 10-11 weeks after quarter end, so a quarter is first
+# usable at the month-end roughly three months after it closes.
+# Q1 (Jan-Mar) -> usable 30 Jun. Q4 (Oct-Dec) -> usable 31 Mar.
+port_total.index = port_total.index + pd.offsets.MonthEnd(6)
+
+# Forward-fill so each month carries the most recently PUBLISHED quarter
 port_monthly = port_total.resample("ME").ffill()
 print(f"  Port freight monthly shape: {port_monthly.shape}")
 

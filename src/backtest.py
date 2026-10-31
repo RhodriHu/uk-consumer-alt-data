@@ -94,10 +94,18 @@ tc_per_month = 0.0020
 strategy_returns_net = strategy_returns - tc_per_month
 
 # ==============================================================
-# Benchmark: equal-weight buy-and-hold
+# Benchmark: equal-weight, rebalanced monthly (weights reset to 1/7
+# each month). This is NOT buy-and-hold, which would let weights drift.
 # ==============================================================
 
 benchmark_returns = returns_aligned.mean(axis=1)
+
+# Drop the first month. positions.shift(1) leaves it with no holdings,
+# so the strategy would book only the 20bp cost while the benchmark
+# earned a real return. Both series start from the first held month.
+strategy_returns = strategy_returns.iloc[1:]
+strategy_returns_net = strategy_returns_net.iloc[1:]
+benchmark_returns = benchmark_returns.iloc[1:]
 
 # ==============================================================
 # Performance metrics
@@ -142,7 +150,7 @@ os.makedirs("outputs", exist_ok=True)
 
 fig, ax = plt.subplots(figsize=(10, 6))
 (1 + strategy_returns_net).cumprod().plot(ax=ax, label="Strategy (net of costs)", linewidth=2)
-(1 + benchmark_returns).cumprod().plot(ax=ax, label="Equal-weight benchmark", linewidth=2, linestyle="--")
+(1 + benchmark_returns).cumprod().plot(ax=ax, label="Equal-weight benchmark (rebalanced monthly)", linewidth=2, linestyle="--")
 ax.set_title("Cumulative Returns: Three-Signal Alt-Data Strategy vs Benchmark")
 ax.set_xlabel("Date")
 ax.set_ylabel("Cumulative return (starting value = 1)")
